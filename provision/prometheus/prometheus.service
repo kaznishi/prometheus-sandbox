@@ -1,0 +1,13 @@
+[Unit]
+Description = prometheus
+After=network.target remote-fs.target nss-lookup.target
+
+[Service]
+Type = simple
+ExecStart = /opt/prometheus/prometheus --config.file=/opt/prometheus/prometheus.yml
+ExecStop=/bin/kill -WINCH ${MAINPID}
+Restart=always
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target

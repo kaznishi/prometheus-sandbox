@@ -1,0 +1,13 @@
+[Unit]
+Description = blackbox_exporter
+After=network.target remote-fs.target nss-lookup.target
+
+[Service]
+Type = simple
+ExecStart = /opt/blackbox_exporter/blackbox_exporter --config.file=/opt/blackbox_exporter/blackbox.yml
+ExecStop=/bin/kill -WINCH ${MAINPID}
+Restart=always
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target
