@@ -1,0 +1,13 @@
+[Unit]
+Description = node_exporter
+After=network.target remote-fs.target nss-lookup.target
+
+[Service]
+Type = simple
+ExecStart = /opt/node_exporter/node_exporter
+ExecStop=/bin/kill -WINCH ${MAINPID}
+Restart=always
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target
