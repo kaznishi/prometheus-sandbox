@@ -4,23 +4,61 @@ groups:
 
   # Alert for any instance that is unreachable for >5 minutes.
   - alert: InstanceDown
-    expr: up == 0
+    expr: up == 0 and job == nodes
     for: 2m
     labels:
       severity: danger
+      type: infra
     annotations:
-      summary: "Instance {{ $labels.instance }} down"
-      description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 2 minutes."
+      summary: "Instance down : {{ $labels.instance }}"
+      description: "{{ $labels.instance }} of job {{ $labels.job }} : インスタンスが落ちています。"
+
+  - alert: StorageUsageWarning
+    expr: node_filesystem_free{mountpoint="/"} / node_filesystem_size{mountpoint="/"} < 0.5
+    for: 1m
+    labels:
+      severity: warn
+      type: infra
+    annotations:
+      summary: "Storage Usage Warning : {{ $labels.instance }}"
+      description: "{{ $labels.instance }} of job {{ $labels.job }} : 空き容量が50%を下回っています。"
+
+  - alert: StorageUsageDanger
+    expr: node_filesystem_free{mountpoint="/"} / node_filesystem_size{mountpoint="/"} < 0.3
+    for: 1m
+    labels:
+      severity: danger
+      type: infra
+    annotations:
+      summary: "Storage Usage Danger : {{ $labels.instance }}"
+      description: "{{ $labels.instance }} of job {{ $labels.job }} : 空き容量が30%を下回っています。"
+
+
 
 - name: http_healthcheck
   rules:
-
-  # Alert for any instance that is unreachable for >5 minutes.
-  - alert: HttpHealthCheckUnhealthy
+  - alert: HttpHealthCheckUnhealthyWarning
     expr: probe_success == 0
-    for: 2m
+    for: 1m
     labels:
       severity: warn
+      type: app
     annotations:
-      summary: "Target {{ $labels.instance }} is unhealthy."
-      description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 2 minutes."
+      summary: "HTTP Health Check Unhealthy, Warning : {{ $labels.instance }}"
+      description: "{{ $labels.instance }} of job {{ $labels.job }} : 外形監視が瞬間的にFail状態になりました。"
+
+  - alert: HttpHealthCheckUnhealthyDanger
+    expr: probe_success == 0
+    for: 3m
+    labels:
+      severity: danger
+      type: app
+    annotations:
+      summary: "HTTP Health Check Unhealthy, Danger : {{ $labels.instance }}"
+      description: "{{ $labels.instance }} of job {{ $labels.job }} : 外形監視が継続的にFail状態です。"
+
+
+
+
+
+

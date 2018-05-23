@@ -8,6 +8,7 @@ global:
   hipchat_auth_token: '1234556789'
   # Alternative host for Hipchat.
   hipchat_api_url: 'https://hipchat.foobar.org/'
+  slack_api_url: https://hooks.slack.com/services/XXXXXXXXX/XXXXXXXXX/XXXXXXXXXXXXXXXXXXXXXXXX
 
 # The directory from which notification templates are read.
 templates: 
@@ -15,28 +16,13 @@ templates:
 
 # The root route on which each incoming alert enters.
 route:
-  # The labels by which incoming alerts are grouped together. For example,
-  # multiple alerts coming in for cluster=A and alertname=LatencyHigh would
-  # be batched into a single group.
-  group_by: ['alertname', 'cluster', 'service']
-
-  # When a new group of alerts is created by an incoming alert, wait at
-  # least 'group_wait' to send the initial notification.
-  # This way ensures that you get multiple alerts for the same group that start
-  # firing shortly after another are batched together on the first 
-  # notification.
+  group_by: ['alertname', 'instance', 'service']
   group_wait: 30s
-
-  # When the first notification was sent, wait 'group_interval' to send a batch
-  # of new alerts that started firing for that group.
-  group_interval: 5m
-
-  # If an alert has successfully been sent, wait 'repeat_interval' to
-  # resend them.
+  group_interval: 1m
   repeat_interval: 3h 
 
   # A default receiver
-  receiver: team-X-mails
+  receiver: team-X
 
   # All the above attributes are inherited by all child routes and can 
   # overwritten on each.
@@ -45,80 +31,116 @@ route:
   routes:
   # This routes performs a regular expression match on alert labels to
   # catch alerts that are related to a list of services.
-  - match_re:
-      service: ^(foo1|foo2|baz)$
-    receiver: team-X-mails
-    # The service has a sub-route for critical alerts, any alerts
-    # that do not match, i.e. severity != critical, fall-back to the
-    # parent node and are sent to 'team-X-mails'
-    routes:
-    - match:
-        severity: critical
-      receiver: team-X-pager
   - match:
-      service: files
-    receiver: team-Y-mails
-
+      type: infra
+    continue: true
     routes:
-    - match:
-        severity: critical
-      receiver: team-Y-pager
-
-  # This route handles all alerts coming from a database service. If there's
-  # no team to handle it, it defaults to the DB team.
+      - match:
+          severity: danger
+        receiver: team-I-danger
+      - match:
+          severity: warn
+        receiver: team-I-warn
   - match:
-      service: database
-    receiver: team-DB-pager
-    # Also group alerts by affected database.
-    group_by: [alertname, cluster, database]
+      type: app
+    continue: true
     routes:
-    - match:
-        owner: team-X
-      receiver: team-X-pager
-    - match:
-        owner: team-Y
-      receiver: team-Y-pager
+      - match:
+          service: A
+        routes:
+          - match:
+              severiry: danger
+            receiver: team-A-danger
+          - match:
+              severity: warn
+            receiver: team-A-warn
+      - match:
+          service: B
+        routes:
+          - match:
+              severiry: danger
+            receiver: team-B-danger
+          - match:
+              severity: warn
+            receiver: team-B-warn
+  - match:
+      type: infra
+      service: B
+    continue: true
+    routes:
+      - match:
+          severity: danger
+        receiver: team-B-danger
+      - match:
+          severity: warn
+        receiver: team-B-warn
 
-
-# Inhibition rules allow to mute a set of alerts given that another alert is
-# firing.
-# We use this to mute any warning-level notifications if the same alert is 
-# already critical.
-inhibit_rules:
-- source_match:
-    severity: 'critical'
-  target_match:
-    severity: 'warning'
-  # Apply inhibition if the alertname is the same.
-  equal: ['alertname', 'cluster', 'service']
-
+############################################
 
 receivers:
-- name: 'team-X-mails'
-  email_configs:
-  - to: 'team-X+alerts@example.org'
+- name: 'team-A-warn'
+  slack_configs:
+  - channel: test-webhook
+    send_resolved: true
+    username: prometheus-a-warn
+    title: '{{ template "custom_title" . }}'
+    text: '{{ template "custom_slack_message" . }}'
+    title_link: '{{ template "custom_slack_titlelink" . }}'
+    color: '{{ if eq .Status "firing" }}warning{{ else }}good{{ end }}'
 
-- name: 'team-X-pager'
-  email_configs:
-  - to: 'team-X+alerts-critical@example.org'
-  pagerduty_configs:
-  - service_key: <team-X-key>
-
-- name: 'team-Y-mails'
-  email_configs:
-  - to: 'team-Y+alerts@example.org'
-
-- name: 'team-Y-pager'
-  pagerduty_configs:
-  - service_key: <team-Y-key>
-
-- name: 'team-DB-pager'
-  pagerduty_configs:
-  - service_key: <team-DB-key>
+- name: 'team-A-danger'
+  slack_configs:
+  - channel: test-webhook
+    send_resolved: true
+    username: prometheus-a-danger
+    title: '{{ template "custom_title" . }}'
+    text: '{{ template "custom_slack_message" . }}'
+    title_link: '{{ template "custom_slack_titlelink" . }}'
   
-- name: 'team-X-hipchat'
-  hipchat_configs:
-  - auth_token: <auth_token>
-    room_id: 85
-    message_format: html
-    notify: true
+- name: 'team-B-warn'
+  slack_configs:
+  - channel: test-webhook
+    send_resolved: true
+    username: prometheus-b-warn
+    title: '{{ template "custom_title" . }}'
+    text: '{{ template "custom_slack_message" . }}'
+    title_link: '{{ template "custom_slack_titlelink" . }}'
+    color: '{{ if eq .Status "firing" }}warning{{ else }}good{{ end }}'
+
+- name: 'team-B-danger'
+  slack_configs:
+  - channel: test-webhook
+    send_resolved: true
+    username: prometheus-b-danger
+    title: '{{ template "custom_title" . }}'
+    text: '{{ template "custom_slack_message" . }}'
+    title_link: '{{ template "custom_slack_titlelink" . }}'
+  
+- name: 'team-I-warn'
+  slack_configs:
+  - channel: test-webhook
+    send_resolved: true
+    username: prometheus-i-warn
+    title: '{{ template "custom_title" . }}'
+    text: '{{ template "custom_slack_message" . }}'
+    title_link: '{{ template "custom_slack_titlelink" . }}'
+    color: '{{ if eq .Status "firing" }}warning{{ else }}good{{ end }}'
+
+- name: 'team-I-danger'
+  slack_configs:
+  - channel: test-webhook
+    send_resolved: true
+    username: prometheus-i-danger
+    title: '{{ template "custom_title" . }}'
+    text: '{{ template "custom_slack_message" . }}'
+    title_link: '{{ template "custom_slack_titlelink" . }}'
+
+# 条件判定に該当しないものを流す先    
+- name: 'team-X'
+  slack_configs:
+  - channel: test-webhook
+    send_resolved: true
+    username: prometheus-x
+    title: '{{ template "custom_title" . }}'
+    text: '{{ template "custom_slack_message" . }}'
+    title_link: '{{ template "custom_slack_titlelink" . }}'

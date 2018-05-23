@@ -1,33 +1,34 @@
-# my global config
 global:
   scrape_interval:     15s # Set the scrape interval to every 15 seconds. Default is every 1 minute.
   evaluation_interval: 15s # Evaluate rules every 15 seconds. The default is every 1 minute.
-  # scrape_timeout is set to the global default (10s).
 
-# Alertmanager configuration
 alerting:
   alertmanagers:
   - static_configs:
     - targets:
       - localhost:9093
 
-# Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
 rule_files:
   - /vagrant/provision/prometheus/rule.yml
-  # - "first_rules.yml"
-  # - "second_rules.yml"
 
-# A scrape configuration containing exactly one endpoint to scrape:
-# Here it's Prometheus itself.
 scrape_configs:
-  # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
   - job_name: 'prometheus'
-
-    # metrics_path defaults to '/metrics'
-    # scheme defaults to 'http'.
-
     static_configs:
-      - targets: ['localhost:9090', '192.168.33.101:9100', '192.168.33.102:9100']
+      - targets:
+          - localhost:9090
+
+  - job_name: 'nodes'
+    static_configs:
+      - targets: 
+          - 192.168.33.101:9100
+          - 192.168.33.102:9100
+        labels:
+          service: A
+      - targets:
+          - 192.168.33.111:9100
+          - 192.168.33.112:9100
+        labels:
+          service: B
 
   - job_name: 'blackbox'
     metrics_path: /probe
@@ -35,23 +36,20 @@ scrape_configs:
       module: [http_2xx]  # Look for a HTTP 200 response.
     static_configs:
       - targets:
-        - http://192.168.33.101    # node1
-        - http://192.168.33.102    # node2
+          - http://192.168.33.101    # nodeA1
+          - http://192.168.33.102    # nodeA2
+        labels:
+          service: A
+      - targets:
+          - http://192.168.33.111    # nodeB1
+          - http://192.168.33.112    # nodeB2
+        labels:
+          service: B        
     relabel_configs:
       - source_labels: [__address__]
-        separator: ;
-        regex: (.*)
         target_label: __param_target
-        replacement: $1
-        action: replace
       - source_labels: [__param_target]
-        separator: ;
-        regex: (.*)
         target_label: instance
-        replacement: $1
-        action: replace
-      - separator: ;
-        regex: (.*)
-        target_label: __address__
-        replacement: 127.0.0.1:9115
-        action: replace
+      - target_label: __address__
+        replacement: 127.0.0.1:9115  # The blackbox exporter's real hostname:port.
+

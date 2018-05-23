@@ -10,18 +10,32 @@ Vagrant.configure("2") do |config|
     prometheus.vm.provision "shell", path: "provision/prometheus/init.sh"
   end
 
-  config.vm.define "node1" do |node1|
-    node1.vm.box = "ubuntu/xenial64"
-    node1.vm.network "private_network", ip: "192.168.33.101"
-    node1.vm.network "private_network", ip: "192.168.33.101", virtualbox__intnet: "intnet"
-    node1.vm.provision "shell", path: "provision/node/init.sh"
+  config.vm.define "nodeA1" do |nodeA1|
+    nodeA1.vm.box = "ubuntu/xenial64"
+    nodeA1.vm.network "private_network", ip: "192.168.33.101"
+    nodeA1.vm.network "private_network", ip: "192.168.33.101", virtualbox__intnet: "intnet"
+    nodeA1.vm.provision "shell", path: "provision/node/init.sh"
   end
 
-  config.vm.define "node2" do |node2|
-    node2.vm.box = "ubuntu/xenial64"
-    node2.vm.network "private_network", ip: "192.168.33.102"
-    node2.vm.network "private_network", ip: "192.168.33.102", virtualbox__intnet: "intnet"
-    node2.vm.provision "shell", path: "provision/node/init.sh"
+  config.vm.define "nodeA2" do |nodeA2|
+    nodeA2.vm.box = "ubuntu/xenial64"
+    nodeA2.vm.network "private_network", ip: "192.168.33.102"
+    nodeA2.vm.network "private_network", ip: "192.168.33.102", virtualbox__intnet: "intnet"
+    nodeA2.vm.provision "shell", path: "provision/node/init.sh"
+  end
+
+  config.vm.define "nodeB1" do |nodeB1|
+    nodeB1.vm.box = "ubuntu/xenial64"
+    nodeB1.vm.network "private_network", ip: "192.168.33.111"
+    nodeB1.vm.network "private_network", ip: "192.168.33.111", virtualbox__intnet: "intnet"
+    nodeB1.vm.provision "shell", path: "provision/node/init.sh"
+  end
+
+  config.vm.define "nodeB2" do |nodeB2|
+    nodeB2.vm.box = "ubuntu/xenial64"
+    nodeB2.vm.network "private_network", ip: "192.168.33.112"
+    nodeB2.vm.network "private_network", ip: "192.168.33.112", virtualbox__intnet: "intnet"
+    nodeB2.vm.provision "shell", path: "provision/node/init.sh"
   end
 
 end
