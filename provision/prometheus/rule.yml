@@ -2,7 +2,6 @@ groups:
 - name: node_metrics
   rules:
 
-  # Alert for any instance that is unreachable for >5 minutes.
   - alert: InstanceDown
     expr: up == 0 and job == nodes
     for: 2m
@@ -33,8 +32,6 @@ groups:
       summary: "Storage Usage Danger : {{ $labels.instance }}"
       description: "{{ $labels.instance }} of job {{ $labels.job }} : 空き容量が30%を下回っています。"
 
-
-
 - name: http_healthcheck
   rules:
   - alert: HttpHealthCheckUnhealthyWarning
@@ -56,9 +53,3 @@ groups:
     annotations:
       summary: "HTTP Health Check Unhealthy, Danger : {{ $labels.instance }}"
       description: "{{ $labels.instance }} of job {{ $labels.job }} : 外形監視が継続的にFail状態です。"
-
-
-
-
-
-
